@@ -1,0 +1,16 @@
+:root {
+  --primary-pink: #ff6fa3;
+  --bg-soft-pink: #fff0f5;
+  --text-dark: #333333;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: var(--text-dark);
+}
