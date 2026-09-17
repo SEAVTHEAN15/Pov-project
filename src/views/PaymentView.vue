@@ -11,7 +11,9 @@ const notificationStore = useNotificationStore();
 const selectedPayment = ref<"khqr" | "card" | "cod">("khqr");
 const isProcessing = ref(false);
 
-// គណនាតម្លៃសរុប (ករណី store គ្មាន totalAmount getter)
+// បង្កើត State សម្រាប់គ្រប់គ្រង Pop-up Modal
+const isModalOpen = ref(false);
+
 const grandTotal = computed(() => {
   if ("totalAmount" in cartStore) {
     return (cartStore as any).totalAmount;
@@ -22,7 +24,6 @@ const grandTotal = computed(() => {
   );
 });
 
-// សម្អាត Cart (ករណី store គ្មាន clearCart action)
 const clearCartItems = () => {
   if (typeof cartStore.clearCart === "function") {
     cartStore.clearCart();
@@ -34,27 +35,28 @@ const clearCartItems = () => {
 const handlePayment = () => {
   isProcessing.value = true;
 
-  // បញ្ជូន Simulate Payment Process
   setTimeout(() => {
-    // 1. បង្កើត Order details សង្ខេប
     const total = grandTotal.value.toFixed(2);
     const itemSummary = cartStore.items
       .map((item) => `${item.quantity}x ${item.product.name}`)
       .join(", ");
 
-    // 2. បញ្ជូន notification ទៅកាន់ Bell Icon store
     notificationStore.addNotification(
       "Payment Successful! 🎉",
       `Paid $${total} for: ${itemSummary}`,
     );
 
-    alert("Payment successful! Thank you for your purchase.");
-
-    // 3. Clear cart និង redirect
-    clearCartItems();
+    // បើក Pop-up Modal ជំនួស alert()
+    isModalOpen.value = true;
     isProcessing.value = false;
-    router.push("/");
   }, 1500);
+};
+
+// បិទ Modal រួចសម្អាត Cart និង Redirect
+const confirmSuccess = () => {
+  isModalOpen.value = false;
+  clearCartItems();
+  router.push("/");
 };
 </script>
 
@@ -174,6 +176,32 @@ const handlePayment = () => {
         Continue Shopping
       </button>
     </div>
+
+    <!-- Modern Success Pop-Up Modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="isModalOpen" class="modal-overlay" @click.self="confirmSuccess">
+          <div class="modal-card">
+            <button class="close-badge" @click="confirmSuccess">✕</button>
+
+            <div class="success-icon-wrapper">
+              <div class="success-icon">✓</div>
+            </div>
+
+            <h3 class="modal-title">Payment Successful!</h3>
+            <p class="modal-text">Thank you for your purchase. Your order has been placed successfully.</p>
+
+            <div class="order-badge">
+              <span>Status: <strong>Completed</strong></span>
+            </div>
+
+            <button class="modal-btn" @click="confirmSuccess">
+              Continue Shopping
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -412,5 +440,141 @@ const handlePayment = () => {
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* Modern Animated Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.modal-card {
+  position: relative;
+  background: #ffffff;
+  padding: 2.25rem 2rem 2rem 2rem;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.close-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: #f1f5f9;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-badge:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.success-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  background-color: #ecfdf5;
+  color: #10b981;
+  font-size: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 0 0 8px #f0fdf4;
+}
+
+.modal-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+.modal-text {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.order-badge {
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #475569;
+  margin-bottom: 1.5rem;
+}
+
+.order-badge strong {
+  color: #10b981;
+}
+
+.modal-btn {
+  width: 100%;
+  background-color: #ff5b93;
+  color: white;
+  border: none;
+  padding: 0.85rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 91, 147, 0.25);
+  transition: all 0.2s ease;
+}
+
+.modal-btn:hover {
+  background-color: #e04a7e;
+  transform: translateY(-1px);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
