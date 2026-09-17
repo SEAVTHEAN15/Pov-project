@@ -8,23 +8,71 @@ const route = useRoute();
 const email = ref("");
 const password = ref("");
 
-const handleLogin = () => {
-  if (!email.value || !password.value) {
-    alert("Please enter email and password");
+// Helper function to clear previous session data
+const clearPreviousUserSession = (): void => {
+  const keysToRemove = [
+    "user_profile",
+    "wishlist",
+    "wishlist_items",
+    "cart",
+    "cart_items",
+    "user_orders",
+  ];
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+};
+
+// Main submit handler
+const handleLogin = (): void => {
+  if (!email.value.trim() || !password.value.trim()) {
+    alert("Please enter both email and password");
     return;
   }
 
-  // 1. រក្សាទុក Token ក្នុង localStorage
-  localStorage.setItem("user_token", "demo_token_123");
+  // 1. Reset old data
+  clearPreviousUserSession();
 
-  // 2. បង្វែរទិសដៅទៅកាន់ទំព័រដើមដែល User ចង់ទៅ (ឧ. Product Detail / Payment)
+  // 2. Set user credentials
+  localStorage.setItem("user_token", "demo_token_123");
+  localStorage.setItem("user_email", email.value);
+
+  // 3. Create fresh user profile object
+  const formattedName = email.value.split("@")[0];
+  const capitalizedName =
+    formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
+
+  const newProfile = {
+    name: capitalizedName,
+    email: email.value,
+    phone: "",
+    address: "",
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+      email.value,
+    )}`,
+  };
+  localStorage.setItem("user_profile", JSON.stringify(newProfile));
+
+  // 4. Redirect to target path or home
   const redirectPath = (route.query.redirect as string) || "/";
   router.push(redirectPath);
 };
 
-// Handle Social Login (Google / Facebook)
-const handleSocialLogin = () => {
-  localStorage.setItem("user_token", "social_demo_token_123");
+// Handle Social Logins
+const handleSocialLogin = (provider: "google" | "facebook"): void => {
+  clearPreviousUserSession();
+
+  const demoSocialEmail = `${provider}.user@gmail.com`;
+  localStorage.setItem("user_token", `${provider}_demo_token_123`);
+  localStorage.setItem("user_email", demoSocialEmail);
+
+  const newProfile = {
+    name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+    email: demoSocialEmail,
+    phone: "",
+    address: "",
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${provider}`,
+  };
+  localStorage.setItem("user_profile", JSON.stringify(newProfile));
+
   const redirectPath = (route.query.redirect as string) || "/";
   router.push(redirectPath);
 };
@@ -42,24 +90,28 @@ const handleSocialLogin = () => {
       <div class="form-section">
         <form @submit.prevent="handleLogin" class="auth-form">
           <div class="form-group">
-            <label>Email</label>
+            <label for="email-input">Email</label>
             <input
+              id="email-input"
               type="email"
               v-model="email"
               placeholder="Enter email"
               required
+              autocomplete="email"
             />
           </div>
 
           <div class="form-group">
-            <label>Password</label>
+            <label for="password-input">Password</label>
             <input
+              id="password-input"
               type="password"
               v-model="password"
               placeholder="Enter password"
               required
+              autocomplete="current-password"
             />
-            <!-- Forgot Password Link -->
+
             <div class="forgot-password-wrapper">
               <RouterLink to="/forgot-password" class="forgot-link">
                 Forgot password?
@@ -74,13 +126,15 @@ const handleSocialLogin = () => {
           <span>or</span>
         </div>
 
+        <!-- Social Logins -->
         <div class="social-login">
           <button
             type="button"
             class="social-btn google-btn"
-            @click="handleSocialLogin"
+            aria-label="Login with Google"
+            @click="handleSocialLogin('google')"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -99,12 +153,20 @@ const handleSocialLogin = () => {
               />
             </svg>
           </button>
+
           <button
             type="button"
             class="social-btn facebook-btn"
-            @click="handleSocialLogin"
+            aria-label="Login with Facebook"
+            @click="handleSocialLogin('facebook')"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="#1877F2"
+              aria-hidden="true"
+            >
               <path
                 d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
               />

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { useCartStore } from "@/stores/cart.store";
 import { useFavoriteStore } from "@/stores/favorite.store";
@@ -18,16 +18,21 @@ const isNotificationDropdownOpen = ref(false);
 
 // Auth & User States
 const isLoggedIn = ref(false);
+const userRole = ref("");
 const userProfile = ref({
   name: "User",
   email: "",
   avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Tim",
 });
 
+// Computed Check for Admin Role
+const isAdmin = computed(() => userRole.value === "admin");
+
 // Check Authentication Status and Sync Profile Data
 const checkAuth = () => {
   const token = localStorage.getItem("user_token");
   isLoggedIn.value = !!token;
+  userRole.value = localStorage.getItem("user_role") || "";
 
   if (isLoggedIn.value) {
     const savedProfile = localStorage.getItem("user_profile");
@@ -51,6 +56,14 @@ const closeMenu = () => {
   isNotificationDropdownOpen.value = false;
 };
 
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value;
+  if (isMenuOpen.value) {
+    isProfileDropdownOpen.value = false;
+    isNotificationDropdownOpen.value = false;
+  }
+};
+
 const toggleProfileDropdown = () => {
   isProfileDropdownOpen.value = !isProfileDropdownOpen.value;
   if (isProfileDropdownOpen.value) {
@@ -66,10 +79,20 @@ const toggleNotificationDropdown = () => {
   }
 };
 
+const handleSearch = () => {
+  const query = searchQuery.value.trim();
+  if (query) {
+    router.push({ path: "/products", query: { search: query } });
+    closeMenu();
+  }
+};
+
 // Handle Logout
 const handleLogout = () => {
   localStorage.removeItem("user_token");
   localStorage.removeItem("user_email");
+  localStorage.removeItem("user_role");
+  userRole.value = "";
   isLoggedIn.value = false;
   closeMenu();
   router.push("/login");
@@ -112,8 +135,8 @@ watch(() => route.path, checkAuth);
       <!-- Mobile Hamburger Button -->
       <button
         class="hamburger"
-        @click="isMenuOpen = !isMenuOpen"
-        aria-label="Toggle Menu"
+        @click="toggleMenu"
+        aria-label="Toggle Navigation Menu"
       >
         <span :class="['bar', { open: isMenuOpen }]"></span>
         <span :class="['bar', { open: isMenuOpen }]"></span>
@@ -139,7 +162,7 @@ watch(() => route.path, checkAuth);
 
       <!-- Right Actions (Search & Icons) -->
       <div class="nav-actions">
-        <div class="search-box">
+        <form class="search-box" @submit.prevent="handleSearch">
           <svg
             class="search-icon"
             xmlns="http://www.w3.org/2000/svg"
@@ -153,8 +176,13 @@ watch(() => route.path, checkAuth);
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input v-model="searchQuery" type="text" placeholder="Search here" />
-        </div>
+          <input
+            v-model="searchQuery"
+            type="search"
+            placeholder="Search products..."
+            aria-label="Search products"
+          />
+        </form>
 
         <div class="icons-group">
           <!-- Favorite / Wishlist Button -->
@@ -185,7 +213,12 @@ watch(() => route.path, checkAuth);
           </RouterLink>
 
           <!-- Cart Button -->
-          <RouterLink to="/cart" class="icon-btn cart-btn" @click="closeMenu">
+          <RouterLink
+            to="/cart"
+            class="icon-btn cart-btn"
+            aria-label="Shopping Cart"
+            @click="closeMenu"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="22"
@@ -241,7 +274,6 @@ watch(() => route.path, checkAuth);
             >
               <div class="notif-header">
                 <h4>Notifications</h4>
-                <!-- Clear All Action -->
                 <button
                   v-if="notificationStore.notifications.length > 0"
                   class="clear-all-btn"
@@ -270,7 +302,6 @@ watch(() => route.path, checkAuth);
                     <div class="notif-time">{{ item.date }}</div>
                   </div>
 
-                  <!-- Delete Item Button -->
                   <button
                     class="delete-btn"
                     title="Delete notification"
@@ -287,7 +318,7 @@ watch(() => route.path, checkAuth);
           <div class="profile-wrapper">
             <button
               class="icon-btn profile-trigger"
-              aria-label="Profile"
+              aria-label="User Profile"
               @click.stop="toggleProfileDropdown"
             >
               <img
@@ -312,7 +343,6 @@ watch(() => route.path, checkAuth);
 
             <!-- Dropdown Card -->
             <div v-if="isProfileDropdownOpen" class="profile-dropdown">
-              <!-- Logged In State -->
               <template v-if="isLoggedIn">
                 <div class="user-info">
                   <span class="user-name">{{ userProfile.name }}</span>
@@ -321,6 +351,16 @@ watch(() => route.path, checkAuth);
                   }}</span>
                 </div>
                 <hr class="divider" />
+
+                <RouterLink
+                  v-if="isAdmin"
+                  to="/admin/dashboard"
+                  class="dropdown-item admin-link"
+                  @click="closeMenu"
+                >
+                  ⚙️ Admin Dashboard
+                </RouterLink>
+
                 <RouterLink
                   to="/profile"
                   class="dropdown-item"
@@ -333,7 +373,6 @@ watch(() => route.path, checkAuth);
                 </button>
               </template>
 
-              <!-- Guest State -->
               <template v-else>
                 <RouterLink
                   to="/login"
@@ -501,7 +540,6 @@ watch(() => route.path, checkAuth);
   text-align: center;
 }
 
-/* Notification Dropdown Styling */
 .notification-wrapper {
   position: relative;
   display: inline-block;
@@ -612,7 +650,6 @@ watch(() => route.path, checkAuth);
   background-color: #fff1f0;
 }
 
-/* Profile Dropdown Styling */
 .profile-wrapper {
   position: relative;
   display: inline-block;
@@ -630,7 +667,7 @@ watch(() => route.path, checkAuth);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  min-width: 150px;
+  min-width: 170px;
   text-align: left;
   z-index: 110;
 }
@@ -676,6 +713,15 @@ watch(() => route.path, checkAuth);
   color: #ff5b93;
 }
 
+.dropdown-item.admin-link {
+  color: #ff5b93;
+  font-weight: 700;
+}
+
+.dropdown-item.admin-link:hover {
+  color: #e04a7e;
+}
+
 .logout-link {
   color: #e04a7e;
 }
@@ -696,7 +742,6 @@ watch(() => route.path, checkAuth);
   transition: transform 0.2s ease;
 }
 
-/* Responsive */
 @media (max-width: 850px) {
   .hamburger {
     display: flex;

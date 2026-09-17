@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import ProductCard from "@/components/common/ProductCard.vue";
-import type { Product } from "@/types/Product";
+import { useProductStore } from "@/stores/product.store";
+
+const productStore = useProductStore();
 
 // Hero Banner Carousel State
 const currentSlide = ref(0);
@@ -87,230 +89,18 @@ const scroll = (container: HTMLElement | null, direction: "left" | "right") => {
   container.scrollBy({ left: scrollAmount, behavior: "smooth" });
 };
 
-const newArrivals = ref<Product[]>([
-  {
-    id: "1",
-    name: "3CE Contour Shading",
-    price: 16.27,
-    image: "/images/products/contour.jpg",
-    category: "cheeks",
-    subcategory: "Shading",
-    isNewArrival: true,
-  },
-  {
-    id: "2",
-    name: "3CE Small Hand Mirror",
-    price: 8.78,
-    image: "/images/products/mirror.jpg",
-    category: "face",
-    subcategory: "Accessories",
-    isNewArrival: true,
-  },
-  {
-    id: "3",
-    name: "3CE True Color Corrector",
-    price: 16.95,
-    image: "/images/products/corrector.jpg",
-    category: "face",
-    subcategory: "Concealer",
-    isNewArrival: true,
-  },
-  {
-    id: "4",
-    name: "Full Coverage Concealer",
-    price: 17.59,
-    image: "/images/products/concealer.jpg",
-    category: "face",
-    subcategory: "Concealer",
-    isNewArrival: true,
-  },
-  {
-    id: "5",
-    name: "3CE Blur Veil Powder",
-    price: 17.62,
-    image: "/images/products/veil.jpg",
-    category: "face",
-    subcategory: "Concealer",
-    isNewArrival: true,
-  },
-  {
-    id: "6",
-    name: "3CE Bare Cover Cushion",
-    price: 20.33,
-    image: "/images/products/bareCover.jpg",
-    category: "face",
-    subcategory: "Concealer",
-    isNewArrival: true,
-  },
-  {
-    id: "7",
-    name: "3CE Color Baker",
-    price: 26.41,
-    image: "/images/products/baker.jpg",
-    category: "face",
-    subcategory: "Concealer",
-    isNewArrival: true,
-  },
-  {
-    id: "8",
-    name: "Kiko Highlighter Face Stick",
-    price: 18.95,
-    image: "/images/products/kikoHighlighter.jpg",
-    category: "face",
-    subcategory: "Concealer",
-    isNewArrival: true,
-  },
-]);
+// Computed categories derived directly from Pinia Product Store
+const newArrivals = computed(() =>
+  productStore.products.filter((p) => p.isNewArrival),
+);
 
-const bestSellers = ref<Product[]>([
-  {
-    id: "9",
-    name: "3CE Eyeshadow Palette",
-    price: 42.66,
-    image: "/images/products/palette.jpg",
-    category: "eyes",
-    subcategory: "Eyeshadow",
-    isBestSeller: true,
-  },
-  {
-    id: "10",
-    name: "3CE Easy Brow Designing Pencil",
-    price: 12.39,
-    image: "/images/products/brow.jpg",
-    category: "eyes",
-    subcategory: "Eyebrow",
-    isBestSeller: true,
-  },
-  {
-    id: "11",
-    name: "CCUK Gel Stroke Liquid Eyeliner",
-    price: 6.0,
-    image: "/images/products/eyeliner.jpg",
-    category: "eyes",
-    subcategory: "Eyeliner",
-    isBestSeller: true,
-  },
-  {
-    id: "12",
-    name: "Large Lash Mascara",
-    price: 16.0,
-    image: "/images/products/mascara.jpg",
-    category: "eyes",
-    subcategory: "Mascara",
-    isBestSeller: true,
-  },
-  {
-    id: "13",
-    name: "[3CE X MUUT] Blur Water Tint",
-    price: 12.85,
-    image: "/images/products/blurWaterTint.jpg",
-    category: "eyes",
-    subcategory: "Mascara",
-    isBestSeller: true,
-  },
-  {
-    id: "14",
-    name: "Matte Colour Lipstick",
-    price: 5.93,
-    image: "/images/products/matteLipstick.jpg",
-    category: "eyes",
-    subcategory: "Mascara",
-    isBestSeller: true,
-  },
-  {
-    id: "15",
-    name: "3D Hydra Lipgloss",
-    price: 17.57,
-    image: "/images/products/hydraLipgloss.jpg",
-    category: "eyes",
-    subcategory: "Mascara",
-    isBestSeller: true,
-  },
-  {
-    id: "16",
-    name: "Glow Blush CheekTone",
-    price: 18.0,
-    image: "/images/products/glowBlush.jpg",
-    category: "eyes",
-    subcategory: "Mascara",
-    isBestSeller: true,
-  },
-]);
+const bestSellers = computed(() =>
+  productStore.products.filter((p) => p.isBestSeller),
+);
 
-const clearStock = ref<Product[]>([
-  {
-    id: "17",
-    name: "3CE Fitting Mesh Cover Cushion",
-    price: 28.43,
-    image: "/images/products/cushion.jpg",
-    category: "face",
-    subcategory: "Cushion",
-    isClearStock: true,
-  },
-  {
-    id: "18",
-    name: "3CE Makeup Fix Powder",
-    price: 20.33,
-    image: "/images/products/powder.jpg",
-    category: "face",
-    subcategory: "Powder",
-    isClearStock: true,
-  },
-  {
-    id: "19",
-    name: "Skin Tone Concealer",
-    price: 13.53,
-    image: "/images/products/skintone-concealer.jpg",
-    category: "face",
-    subcategory: "Concealer",
-    isClearStock: true,
-  },
-  {
-    id: "20",
-    name: "3CE Tone Up Tint",
-    price: 15.59,
-    image: "/images/products/tint.jpg",
-    category: "lips",
-    subcategory: "Tint",
-    isClearStock: true,
-  },
-  {
-    id: "21",
-    name: "Makeup Travel Bag",
-    price: 5.0,
-    image: "/images/products/travelBage.jpg",
-    category: "lips",
-    subcategory: "Tint",
-    isClearStock: true,
-  },
-  {
-    id: "22",
-    name: "3CE Pouch Small",
-    price: 6.72,
-    image: "/images/products/pouchSmall.jpg",
-    category: "lips",
-    subcategory: "Tint",
-    isClearStock: true,
-  },
-  {
-    id: "23",
-    name: "3CE Color Grid Eyeshadow",
-    price: 12.87,
-    image: "/images/products/gridEyeshadow.jpg",
-    category: "lips",
-    subcategory: "Tint",
-    isClearStock: true,
-  },
-  {
-    id: "24",
-    name: "Arch Appeal Brow Mascara",
-    price: 12.85,
-    image: "/images/products/browMascara.jpg",
-    category: "lips",
-    subcategory: "Tint",
-    isClearStock: true,
-  },
-]);
+const clearStock = computed(() =>
+  productStore.products.filter((p) => p.isClearStock),
+);
 </script>
 
 <template>
@@ -323,7 +113,7 @@ const clearStock = ref<Product[]>([
         class="slide"
         :class="{ active: currentSlide === index }"
         :style="{
-          backgroundImage: ` url(${slide.image})`,
+          backgroundImage: `url(${slide.image})`,
         }"
       >
         <div class="slide-content">
@@ -364,7 +154,7 @@ const clearStock = ref<Product[]>([
     </div>
 
     <!-- Section 1: New Arrivals -->
-    <section class="section">
+    <section v-if="newArrivals.length" class="section">
       <div class="section-header">
         <h3 class="content-text">New Arrivals</h3>
         <div class="carousel-nav">
@@ -384,7 +174,7 @@ const clearStock = ref<Product[]>([
     </section>
 
     <!-- Section 2: Best Sellers -->
-    <section class="section">
+    <section v-if="bestSellers.length" class="section">
       <div class="section-header">
         <h3 class="content-text">Best Sellers</h3>
         <div class="carousel-nav">
@@ -404,7 +194,7 @@ const clearStock = ref<Product[]>([
     </section>
 
     <!-- Section 3: Clear Stock -->
-    <section class="section">
+    <section v-if="clearStock.length" class="section">
       <div class="section-header">
         <h3 class="content-text">Clear Stock</h3>
         <div class="carousel-nav">
@@ -428,7 +218,7 @@ const clearStock = ref<Product[]>([
 <style scoped>
 .home-view {
   width: 100%;
-  max-width: 1300px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 1rem;
   box-sizing: border-box;
@@ -439,7 +229,7 @@ const clearStock = ref<Product[]>([
   position: relative;
   width: 100%;
   height: 380px;
-  border-radius: 16px;
+  border-radius: 0px 0px 16px 16px;
   overflow: hidden;
   margin-bottom: 50px;
 }
@@ -603,7 +393,6 @@ const clearStock = ref<Product[]>([
 
 .carousel-container {
   display: flex;
-  /* gap: 1.25rem; */
   gap: 15px;
   overflow-x: auto;
   scroll-behavior: smooth;
@@ -612,7 +401,6 @@ const clearStock = ref<Product[]>([
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  /* background-color: #e04a7e; */
 }
 
 .carousel-container::-webkit-scrollbar {

@@ -10,6 +10,7 @@ const notificationStore = useNotificationStore();
 
 const selectedPayment = ref<"khqr" | "card" | "cod">("khqr");
 const isProcessing = ref(false);
+const showSuccessModal = ref(false); // Controls the custom success modal
 
 // គណនាតម្លៃសរុប (ករណី store គ្មាន totalAmount getter)
 const grandTotal = computed(() => {
@@ -42,19 +43,37 @@ const handlePayment = () => {
       .map((item) => `${item.quantity}x ${item.product.name}`)
       .join(", ");
 
-    // 2. បញ្ជូន notification ទៅកាន់ Bell Icon store
+    // 2. SAVE ORDER TO LOCALSTORAGE FOR PROFILE PAGE
+    const existingOrders = JSON.parse(
+      localStorage.getItem("user_orders") || "[]",
+    );
+    const newOrder = {
+      id: "ORD-" + Date.now(),
+      date: new Date().toLocaleDateString(),
+      items: [...cartStore.items],
+      total: grandTotal.value,
+      paymentMethod: selectedPayment.value,
+      status: "Completed",
+    };
+    existingOrders.push(newOrder);
+    localStorage.setItem("user_orders", JSON.stringify(existingOrders));
+
+    // 3. បញ្ជូន notification ទៅកាន់ Bell Icon store
     notificationStore.addNotification(
       "Payment Successful! 🎉",
       `Paid $${total} for: ${itemSummary}`,
     );
 
-    alert("Payment successful! Thank you for your purchase.");
-
-    // 3. Clear cart និង redirect
-    clearCartItems();
+    // 4. Stop loading and open modal instead of native alert
     isProcessing.value = false;
-    router.push("/");
+    showSuccessModal.value = true;
   }, 1500);
+};
+
+const closeSuccessModal = () => {
+  showSuccessModal.value = false;
+  clearCartItems();
+  router.push("/");
 };
 </script>
 
@@ -138,8 +157,9 @@ const handlePayment = () => {
           <p class="qr-instruction">Scan with Bakong or any Banking App</p>
           <div class="qr-box">
             <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=BakongPaymentSample"
+              :src="'/images/products/my-bakong-qr.jpg'"
               alt="KHQR Code"
+              class="real-qr-img"
             />
           </div>
         </div>
@@ -174,6 +194,23 @@ const handlePayment = () => {
         Continue Shopping
       </button>
     </div>
+
+    <!-- Custom Success Modal -->
+    <Teleport to="body">
+      <div v-if="showSuccessModal" class="modal-overlay">
+        <div class="modal-card">
+          <div class="success-icon">✓</div>
+          <h3 class="modal-title">Payment Successful!</h3>
+          <p class="modal-message">
+            Thank you for your purchase. Your order has been placed
+            successfully.
+          </p>
+          <button class="modal-btn" @click="closeSuccessModal">
+            Back to Home
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -330,9 +367,18 @@ const handlePayment = () => {
   font-weight: 500;
 }
 
-.qr-box img {
+.qr-box {
+  display: flex;
+  justify-content: center;
+}
+
+.real-qr-img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
   border-radius: 8px;
   border: 1px solid #eaeaea;
+  background-color: #ffffff;
 }
 
 /* Card Inputs */
@@ -412,5 +458,87 @@ const handlePayment = () => {
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* Custom Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+}
+
+.modal-card {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  animation: popIn 0.25s ease-out;
+}
+
+.success-icon {
+  width: 56px;
+  height: 56px;
+  background-color: #e6f9f0;
+  color: #10b981;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin: 0 auto 1rem auto;
+}
+
+.modal-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 0.5rem;
+}
+
+.modal-message {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.modal-btn {
+  width: 100%;
+  background-color: #ff5b93;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.modal-btn:hover {
+  background-color: #e04a7e;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>

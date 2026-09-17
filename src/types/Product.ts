@@ -1,22 +1,3 @@
-// export type CategoryType = "eyes" | "lips" | "cheeks" | "face";
-
-// export interface Product {
-//   id: string;
-//   name: string;
-//   price: number;
-//   image: string;
-//   category: CategoryType;
-//   subcategory: string;
-//   isNewArrival?: boolean;
-//   isBestSeller?: boolean;
-//   isClearStock?: boolean;
-// }
-
-// export interface CartItem {
-//   product: Product;
-//   quantity: number;
-// }
-
 export type CategoryType = "eyes" | "lips" | "cheeks" | "face" | "others";
 
 export interface Product {
@@ -36,3 +17,14 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
+
+export interface FavoriteItem {
+  product: Product;
+  addedAt?: string;
+}
+
+export type ProductSortOption =
+  | "price-asc"
+  | "price-desc"
+  | "name-asc"
+  | "name-desc";

@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import type { Product } from "@/types/Product";
 import { useCartStore } from "@/stores/cart.store";
-import { useFavoriteStore } from "@/stores/favorite.store"; // ថែមបន្ទាត់នេះ
-const favoriteStore = useFavoriteStore();
+import { useFavoriteStore } from "@/stores/favorite.store";
 
-const props = defineProps<{
+defineProps<{
   product: Product;
 }>();
-const cartStore = useCartStore();
 
-const emit = defineEmits(["add-to-cart"]);
-const isLiked = ref(false);
+const cartStore = useCartStore();
+const favoriteStore = useFavoriteStore();
 </script>
 
 <template>
@@ -22,7 +19,7 @@ const isLiked = ref(false);
       </RouterLink>
       <button
         class="like-btn"
-        :class="{ liked: isLiked }"
+        :class="{ liked: favoriteStore.isFavorite(product.id) }"
         @click="favoriteStore.toggleFavorite(product)"
       >
         <svg
@@ -46,7 +43,7 @@ const isLiked = ref(false);
         <h4 class="product-name">{{ product.name }}</h4>
       </RouterLink>
       <div class="product-footer">
-        <span class="price">${{ product.price.toFixed(2) }}</span>
+        <span class="price">${{ Number(product.price).toFixed(2) }}</span>
         <button class="add-btn" @click="cartStore.addToCart(product)">
           Add to Cart
         </button>
@@ -64,17 +61,19 @@ const isLiked = ref(false);
   display: flex;
   flex-direction: column;
   box-shadow: 0px 0px 15px #bcbaba;
-  transition: 0.3s;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
 }
 .product-card:hover {
   transform: scale(1.03);
-  opacity: 75%;
+  opacity: 0.85;
 }
 
 .image-wrapper {
   position: relative;
   width: 100%;
-  padding-top: 100%; /* 1:1 Aspect Ratio */
+  padding-top: 100%;
   background-color: #fdf2f7;
 }
 
@@ -97,12 +96,10 @@ const isLiked = ref(false);
   width: 28px;
   height: 28px;
   cursor: pointer;
-  color: #ccc;
-  font-size: 1rem;
-
-  &.liked {
-    color: #ff6fa3;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .product-details {
@@ -143,5 +140,10 @@ const isLiked = ref(false);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-btn:hover {
+  background-color: #e04a7e;
 }
 </style>

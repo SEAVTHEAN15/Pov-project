@@ -1,65 +1,96 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
+import { useFavoriteStore } from "@/stores/favorite.store";
+import { useCartStore } from "@/stores/cart.store";
 
 const router = useRouter();
+const favoriteStore = useFavoriteStore();
+const cartStore = useCartStore();
+
+// State for Admin Status
+const userRole = ref("");
+const isAdmin = computed(() => userRole.value === "admin");
 
 // Active Tab State
 const activeTab = ref("profile");
 
-// State for Profile Information
+// User Profile Data
 const user = ref({
-  name: "Sreypov Yeoung",
-  email: "sreypovyeoung@gmail.com",
+  name: "User",
+  email: "user@example.com",
   phone: "+855 12 345 678",
   joinedDate: "October 2025",
-  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sreypov",
+  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=User",
   address: "Phnom Penh, Cambodia",
+});
+
+// Admin Stats (Shown when isAdmin is true)
+const adminStats = ref({
+  totalRevenue: "$1,250.00",
+  totalOrders: 42,
+  pendingOrders: 5,
 });
 
 const isEditing = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
-// Live Counts for Navbar-connected features
-const wishlistCount = ref(0);
-const cartCount = ref(0);
-
-// State for Orders
-const recentOrders = ref<
-  Array<{ id: string; date: string; total: string; status: string }>
->([]);
-
-// Helper function to dynamically check multiple potential storage keys
-const getStorageItemCount = (keys: string[]): number => {
-  for (const key of keys) {
-    const rawData = localStorage.getItem(key);
-    if (rawData) {
-      try {
-        const parsed = JSON.parse(rawData);
-        if (Array.isArray(parsed)) return parsed.length;
-        if (typeof parsed === "number") return parsed;
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          Array.isArray(parsed.items)
-        ) {
-          return parsed.items.length;
-        }
-      } catch (e) {
-        console.error(`Error parsing localStorage key: ${key}`, e);
-      }
+// Customer Live Counts linked to Pinia Stores with localStorage fallback
+const wishlistCount = computed(() => {
+  if (favoriteStore.favoriteItems && favoriteStore.favoriteItems.length > 0) {
+    return favoriteStore.favoriteItems.length;
+  }
+  // Fallback check local storage if Pinia state is empty on load
+  const raw =
+    localStorage.getItem("wishlist") || localStorage.getItem("wishlist_items");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.length : 0;
+    } catch {
+      return 0;
     }
   }
   return 0;
-};
+});
 
-// Load saved data and count items safely from local storage
+const cartCount = computed(() => {
+  if (cartStore.items && cartStore.items.length > 0) {
+    return cartStore.items.reduce(
+      (total: number, item: any) => total + (item.quantity || 1),
+      0,
+    );
+  }
+  // Fallback check local storage
+  const raw =
+    localStorage.getItem("cart") || localStorage.getItem("cart_items");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.reduce(
+          (total: number, item: any) => total + (item.quantity || 1),
+          0,
+        );
+      }
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
+});
+
+const recentOrders = ref<Array<any>>([]);
+
 onMounted(() => {
   const token = localStorage.getItem("user_token");
   if (!token) {
-    router.push("/login");
-    return;
+    // router.push("/login");
+    // return;
   }
+
+  // Load User Role (Defaults to "user" instead of "admin")
+  userRole.value = localStorage.getItem("user_role") || "user";
 
   // Load User Profile
   const savedUser = localStorage.getItem("user_profile");
@@ -69,69 +100,40 @@ onMounted(() => {
     } catch (e) {
       console.error("Failed to parse user profile", e);
     }
-  } else {
-    const savedEmail = localStorage.getItem("user_email");
-    if (savedEmail) user.value.email = savedEmail;
   }
 
-  // Sync Wishlist Count dynamically across potential storage keys
-  wishlistCount.value = getStorageItemCount([
-    "wishlist",
-    "wishlist_items",
-    "wishlistItems",
-    "pinky_wishlist",
-    "favorites",
-  ]);
-
-  // Sync Cart Count dynamically across potential storage keys
-  cartCount.value = getStorageItemCount([
-    "cart",
-    "cart_items",
-    "cartItems",
-    "pinky_cart",
-    "shopping_cart",
-  ]);
-
-  // Sync Orders
-  try {
-    const rawOrders = localStorage.getItem("user_orders") || "[]";
-    recentOrders.value = JSON.parse(rawOrders);
-  } catch {
-    recentOrders.value = [];
+  // Load orders if regular user
+  if (!isAdmin.value) {
+    try {
+      recentOrders.value = JSON.parse(
+        localStorage.getItem("user_orders") || "[]",
+      );
+    } catch {
+      recentOrders.value = [];
+    }
   }
 });
 
-// Trigger file input for avatar update
-const triggerFileInput = () => {
-  fileInput.value?.click();
-};
+const triggerFileInput = () => fileInput.value?.click();
 
 const handleAvatarChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
-    const file = target.files[0];
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (e.target?.result) {
-        user.value.avatar = e.target.result as string;
-      }
+      if (e.target?.result) user.value.avatar = e.target.result as string;
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(target.files[0]);
   }
 };
 
-// Save changes
 const handleSave = () => {
   localStorage.setItem("user_profile", JSON.stringify(user.value));
-  localStorage.setItem("user_email", user.value.email);
   isEditing.value = false;
-  alert("Profile updated successfully!");
 };
 
-// Logout
 const handleLogout = () => {
-  localStorage.removeItem("user_token");
-  localStorage.removeItem("user_email");
+  localStorage.clear();
   router.push("/login");
 };
 </script>
@@ -139,10 +141,9 @@ const handleLogout = () => {
 <template>
   <div class="profile-page">
     <div class="container">
-      <!-- Breadcrumb / Header -->
       <div class="page-header">
         <h2>My Account</h2>
-        <p>Manage your account settings, orders, and preferences.</p>
+        <p>Manage your account settings, preferences, and system access.</p>
       </div>
 
       <div class="profile-layout">
@@ -151,11 +152,7 @@ const handleLogout = () => {
           <div class="user-brief">
             <div class="avatar-wrapper">
               <img :src="user.avatar" :alt="user.name" class="avatar" />
-              <button
-                class="change-avatar-btn"
-                @click="triggerFileInput"
-                title="Change Picture"
-              >
+              <button class="change-avatar-btn" @click="triggerFileInput">
                 📷
               </button>
               <input
@@ -166,8 +163,12 @@ const handleLogout = () => {
                 @change="handleAvatarChange"
               />
             </div>
+
             <h4>{{ user.name }}</h4>
             <span class="user-email">{{ user.email }}</span>
+
+            <!-- Admin Role Badge -->
+            <span v-if="isAdmin" class="role-badge">ADMINISTRATOR</span>
           </div>
 
           <nav class="tab-menu">
@@ -178,6 +179,7 @@ const handleLogout = () => {
               <span>👤</span> Personal Details
             </button>
             <button
+              v-if="!isAdmin"
               :class="['tab-btn', { active: activeTab === 'orders' }]"
               @click="activeTab = 'orders'"
             >
@@ -197,59 +199,67 @@ const handleLogout = () => {
 
         <!-- Main Content Area -->
         <main class="profile-content">
-          <!-- Metric Stat Cards -->
-          <div class="stats-row">
-            <!-- Wishlist Card -->
-            <div class="stat-card clickable" @click="router.push('/wishlist')">
-              <div class="icon-header">
-                <svg
-                  class="nav-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                  />
-                </svg>
+          <!-- Admin Banner Access -->
+          <div v-if="isAdmin" class="admin-banner">
+            <div class="admin-banner-info">
+              <span class="admin-icon">⚙️</span>
+              <div>
+                <h4>Administrator Access Enabled</h4>
+                <p>
+                  You have system-wide management permissions for products,
+                  orders, and users.
+                </p>
               </div>
+            </div>
+            <button class="admin-btn" @click="router.push('/admin/dashboard')">
+              Go to Admin Dashboard →
+            </button>
+          </div>
+
+          <!-- ADMIN STATS (Shown if Admin) -->
+          <div v-if="isAdmin" class="stats-row">
+            <div
+              class="stat-card clickable"
+              @click="router.push('/admin/dashboard')"
+            >
+              <span class="stat-num">{{ adminStats.totalRevenue }}</span>
+              <span class="stat-label">Total Revenue</span>
+            </div>
+            <div
+              class="stat-card clickable"
+              @click="router.push('/admin/dashboard')"
+            >
+              <span class="stat-num">{{ adminStats.totalOrders }}</span>
+              <span class="stat-label">Total Orders</span>
+            </div>
+            <div
+              class="stat-card clickable"
+              @click="router.push('/admin/dashboard')"
+            >
+              <span class="stat-num highlight-pink">{{
+                adminStats.pendingOrders
+              }}</span>
+              <span class="stat-label">Pending Orders</span>
+            </div>
+          </div>
+
+          <!-- CUSTOMER STATS (Shown if Regular User) -->
+          <div v-else class="stats-row">
+            <div class="stat-card clickable" @click="router.push('/favorites')">
               <span class="stat-num">{{ wishlistCount }}</span>
               <span class="stat-label">Wishlist Items</span>
             </div>
-
-            <!-- Cart Card -->
             <div class="stat-card clickable" @click="router.push('/cart')">
-              <div class="icon-header">
-                <svg
-                  class="nav-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
-                  />
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <path d="M16 10a4 4 0 0 1-8 0" />
-                </svg>
-              </div>
               <span class="stat-num">{{ cartCount }}</span>
               <span class="stat-label">Cart Items</span>
             </div>
-
-            <!-- Orders Card -->
             <div class="stat-card clickable" @click="activeTab = 'orders'">
-              <div class="icon-header">
-                <span class="emoji-icon">📦</span>
-              </div>
               <span class="stat-num">{{ recentOrders.length }}</span>
               <span class="stat-label">Total Orders</span>
             </div>
           </div>
 
-          <!-- TAB 1: Profile Details & Edit Form -->
+          <!-- TAB: Personal Details -->
           <div v-if="activeTab === 'profile'" class="content-card">
             <div class="card-header">
               <h3>Personal Information</h3>
@@ -262,7 +272,6 @@ const handleLogout = () => {
               </button>
             </div>
 
-            <!-- Display Mode -->
             <div v-if="!isEditing" class="profile-details">
               <div class="detail-item">
                 <span class="label">Full Name</span>
@@ -282,7 +291,6 @@ const handleLogout = () => {
               </div>
             </div>
 
-            <!-- Edit Mode -->
             <form v-else @submit.prevent="handleSave" class="edit-form">
               <div class="form-group">
                 <label>Full Name</label>
@@ -310,41 +318,23 @@ const handleLogout = () => {
             </form>
           </div>
 
-          <!-- TAB 2: Recent Orders -->
+          <!-- TAB: My Orders -->
           <div v-if="activeTab === 'orders'" class="content-card">
             <div class="card-header">
               <h3>My Orders</h3>
             </div>
-            <table class="orders-table">
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="order in recentOrders" :key="order.id">
-                  <td>
-                    <strong>{{ order.id }}</strong>
-                  </td>
-                  <td>{{ order.date }}</td>
-                  <td>{{ order.total }}</td>
-                  <td>
-                    <span :class="['status-badge', order.status.toLowerCase()]">
-                      {{ order.status }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="recentOrders.length === 0" class="empty-state">
+              <p>You haven't placed any orders yet.</p>
+            </div>
+            <div v-else class="orders-list">
+              <p>Total Orders Placed: {{ recentOrders.length }}</p>
+            </div>
           </div>
 
-          <!-- TAB 3: Saved Address -->
+          <!-- TAB: Address -->
           <div v-if="activeTab === 'address'" class="content-card">
             <div class="card-header">
-              <h3>Saved Shipping Address</h3>
+              <h3>Saved Address</h3>
             </div>
             <div class="address-box">
               <p><strong>Recipient:</strong> {{ user.name }}</p>
@@ -370,10 +360,6 @@ const handleLogout = () => {
   margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: 2rem;
-}
-
 .page-header h2 {
   font-size: 1.8rem;
   margin: 0;
@@ -384,16 +370,15 @@ const handleLogout = () => {
   color: #666;
   font-size: 0.9rem;
   margin-top: 0.25rem;
+  margin-bottom: 2rem;
 }
 
-/* Layout Grid */
 .profile-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 2rem;
 }
 
-/* Sidebar Styling */
 .profile-sidebar {
   background: #ffffff;
   border-radius: 16px;
@@ -413,7 +398,6 @@ const handleLogout = () => {
 
 .avatar-wrapper {
   position: relative;
-  display: inline-block;
   margin-bottom: 0.75rem;
 }
 
@@ -422,7 +406,6 @@ const handleLogout = () => {
   height: 95px;
   border-radius: 50%;
   object-fit: cover;
-  background-color: #fff0f5;
   border: 3px solid #f26597;
 }
 
@@ -439,22 +422,26 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.change-avatar-btn:hover {
-  background-color: #fff0f5;
 }
 
 .hidden-input {
   display: none;
 }
 
+.role-badge {
+  margin-top: 0.5rem;
+  background-color: #1e293b;
+  color: #38bdf8;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+}
+
 .user-brief h4 {
   margin: 0;
   font-size: 1.1rem;
-  color: #111;
 }
 
 .user-email {
@@ -482,7 +469,6 @@ const handleLogout = () => {
   font-weight: 600;
   color: #444;
   cursor: pointer;
-  transition: all 0.2s;
   text-align: left;
 }
 
@@ -496,15 +482,56 @@ const handleLogout = () => {
   color: #e04a7e;
   margin-top: 1rem;
   border-top: 1px solid #f2659720;
-  border-radius: 0;
-  padding-top: 1rem;
 }
 
-/* Main Content Area */
 .profile-content {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.admin-banner {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-icon {
+  font-size: 1.8rem;
+}
+
+.admin-banner-info h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #38bdf8;
+}
+
+.admin-banner-info p {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.admin-btn {
+  background-color: #f26597;
+  color: #ffffff;
+  border: none;
+  padding: 0.65rem 1.1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .stats-row {
@@ -518,41 +545,22 @@ const handleLogout = () => {
   border-radius: 14px;
   padding: 1.25rem;
   border: 1px solid #94929230;
-  box-shadow: 0px 4px 12px #eabfcd25;
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
 }
 
 .stat-card.clickable {
   cursor: pointer;
 }
 
-.stat-card.clickable:hover {
-  transform: translateY(-2px);
-  box-shadow: 0px 6px 16px #eabfcd45;
-}
-
-.icon-header {
-  margin-bottom: 0.25rem;
-}
-
-.nav-icon {
-  width: 22px;
-  height: 22px;
-  stroke: #f26597;
-}
-
-.emoji-icon {
-  font-size: 1.3rem;
-}
-
 .stat-num {
   font-size: 1.6rem;
   font-weight: 700;
+  color: #1a202c;
+}
+
+.stat-num.highlight-pink {
   color: #f26597;
 }
 
@@ -567,7 +575,6 @@ const handleLogout = () => {
   border-radius: 16px;
   padding: 1.75rem;
   border: 1px solid #94929230;
-  box-shadow: 0px 4px 15px #eabfcd30;
 }
 
 .card-header {
@@ -579,12 +586,6 @@ const handleLogout = () => {
   border-bottom: 1px solid #eee;
 }
 
-.card-header h3 {
-  margin: 0;
-  font-size: 1.15rem;
-  color: #111;
-}
-
 .action-btn.edit {
   background-color: #f26597;
   color: white;
@@ -592,18 +593,7 @@ const handleLogout = () => {
   padding: 0.45rem 1rem;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.85rem;
   cursor: pointer;
-}
-
-.action-btn.edit:hover {
-  background-color: #e04a7e;
-}
-
-/* Details List */
-.profile-details {
-  display: flex;
-  flex-direction: column;
 }
 
 .detail-item {
@@ -621,10 +611,8 @@ const handleLogout = () => {
 .value {
   font-weight: 600;
   color: #222;
-  font-size: 0.95rem;
 }
 
-/* Form Editing */
 .edit-form {
   display: flex;
   flex-direction: column;
@@ -637,28 +625,15 @@ const handleLogout = () => {
   gap: 0.4rem;
 }
 
-.form-group label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #444;
-}
-
 .form-group input {
   padding: 0.75rem;
   border: 1px solid #ccc;
   border-radius: 8px;
-  font-size: 0.95rem;
-  outline: none;
-}
-
-.form-group input:focus {
-  border-color: #f26597;
 }
 
 .form-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 1rem;
 }
 
 .save-btn {
@@ -669,71 +644,22 @@ const handleLogout = () => {
   padding: 0.75rem;
   border-radius: 8px;
   font-weight: 700;
-  cursor: pointer;
-}
-
-.save-btn:hover {
-  background-color: #e04a7e;
 }
 
 .cancel-btn {
   flex: 1;
-  background-color: transparent;
-  color: #666;
+  background: transparent;
   border: 1px solid #ccc;
   padding: 0.75rem;
   border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
-.cancel-btn:hover {
-  background-color: #f5f5f5;
+.empty-state {
+  text-align: center;
+  color: #888;
+  padding: 1.5rem;
 }
 
-/* Orders Table */
-.orders-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 0.9rem;
-}
-
-.orders-table th,
-.orders-table td {
-  padding: 0.85rem 0.5rem;
-  border-bottom: 1px solid #f0e4e8;
-}
-
-.status-badge {
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.status-badge.delivered {
-  background: #e6fffa;
-  color: #047857;
-}
-
-.status-badge.processing {
-  background: #fffbe6;
-  color: #d97706;
-}
-
-.status-badge.shipped {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.address-box p {
-  margin: 0.5rem 0;
-  color: #444;
-  font-size: 0.95rem;
-}
-
-/* Responsive */
 @media (max-width: 768px) {
   .profile-layout {
     grid-template-columns: 1fr;

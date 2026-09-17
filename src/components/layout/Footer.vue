@@ -3,12 +3,19 @@ import { ref } from "vue";
 import { RouterLink } from "vue-router";
 
 const newsletterEmail = ref("");
+const showModal = ref(false);
+const subscribedEmail = ref("");
 
 const handleSubscribe = () => {
   if (newsletterEmail.value) {
-    alert(`Subscribed with: ${newsletterEmail.value}`);
+    subscribedEmail.value = newsletterEmail.value;
+    showModal.value = true;
     newsletterEmail.value = "";
   }
+};
+
+const closeModal = () => {
+  showModal.value = false;
 };
 </script>
 
@@ -42,31 +49,13 @@ const handleSubscribe = () => {
 
           <div class="app-qr-section">
             <h4>Pinky makeup App</h4>
-            <svg
-              class="qr-code"
-              viewBox="0 0 100 100"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fill="#000"
-                d="M0,0 h35 v35 h-35 z M5,5 v25 h25 v-25 z M10,10 h15 v15 h-15 z"
+            <div class="qr-frame">
+              <img
+                src="/public/images/products/qrCode.png"
+                class="qr-code"
+                alt=""
               />
-              <path
-                fill="#000"
-                d="M65,0 h35 v35 h-35 z M70,5 v25 h25 v-25 z M75,10 h15 v15 h-15 z"
-              />
-              <path
-                fill="#000"
-                d="M0,65 h35 v35 h-35 z M5,70 v25 h25 v-25 z M10,75 h15 v15 h-15 z"
-              />
-              <rect x="42" y="5" width="10" height="25" fill="#000" />
-              <rect x="42" y="42" width="16" height="16" fill="#000" />
-              <rect x="65" y="42" width="25" height="10" fill="#000" />
-              <rect x="5" y="42" width="25" height="10" fill="#000" />
-              <rect x="42" y="70" width="10" height="25" fill="#000" />
-              <rect x="65" y="65" width="15" height="15" fill="#000" />
-              <rect x="85" y="85" width="15" height="15" fill="#000" />
-            </svg>
+            </div>
           </div>
         </div>
 
@@ -271,6 +260,21 @@ const handleSubscribe = () => {
     <div class="footer-bottom">
       <p>©Pinky. All right reserved</p>
     </div>
+
+    <!-- Subscription Success Modal -->
+    <Transition name="fade">
+      <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+        <div class="modal-card">
+          <div class="modal-icon">✓</div>
+          <h3>Subscription Successful!</h3>
+          <p>
+            Thank you for subscribing with: <br />
+            <strong>{{ subscribedEmail }}</strong>
+          </p>
+          <button class="modal-btn" @click="closeModal">OK</button>
+        </div>
+      </div>
+    </Transition>
   </footer>
 </template>
 
@@ -303,16 +307,6 @@ const handleSubscribe = () => {
 .logo-circle {
   width: 70px;
   height: 70px;
-  /* background-color: #ff5b93; */
-  /* border-radius: 50%; */
-  /* display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white; */
-  /* text-align: center; */
-  /* line-height: 1; */
-  /* flex-shrink: 0; */
 }
 .logo-circle .logo-img {
   width: 100%;
@@ -378,13 +372,14 @@ const handleSubscribe = () => {
   margin-bottom: 0.75rem;
   color: #000000;
 }
-
+.qr-frame {
+  width: 100px;
+  height: 100px;
+}
 .qr-code {
-  width: 75px;
-  height: 75px;
-  background: #ffffff;
-  padding: 4px;
-  border-radius: 4px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .col-title {
@@ -436,6 +431,83 @@ const handleSubscribe = () => {
   font-size: 0.75rem;
   color: #666666;
   margin: 0;
+}
+
+/* --- Modal Styles --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.modal-icon {
+  width: 50px;
+  height: 50px;
+  background-color: #ffd8e5;
+  color: #ee5b88;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 auto 1rem;
+}
+
+.modal-card h3 {
+  margin: 0 0 0.5rem;
+  color: #222;
+  font-size: 1.3rem;
+}
+
+.modal-card p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.modal-btn {
+  background-color: #ee5b88;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.modal-btn:hover {
+  background-color: #d84875;
+}
+
+/* Modal Fade Animation */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 900px) {
