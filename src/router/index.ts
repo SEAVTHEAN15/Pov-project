@@ -64,25 +64,91 @@ const routes: Array<RouteRecordRaw> = [
     name: "forgot-password",
     component: () => import("@/views/ForgotPasswordView.vue"),
   },
+
+  // Separate Admin Login Route
+  {
+    path: "/admin/login",
+    name: "admin-login",
+    component: () => import("@/views/AdminLoginView.vue"),
+  },
+
+  // Protected Admin Routes Setup
+  {
+    path: "/admin",
+    component: () => import("@/views/admin/AdminLayout.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: "",
+        redirect: "/admin/dashboard",
+      },
+      {
+        path: "dashboard",
+        name: "admin-dashboard",
+        component: () => import("@/views/admin/DashboardOverview.vue"),
+      },
+      {
+        path: "products",
+        name: "admin-products",
+        component: () => import("@/views/admin/ProductManagement.vue"),
+      },
+      {
+        path: "orders",
+        name: "admin-orders",
+        component: () => import("@/views/admin/OrderManagement.vue"),
+      },
+    ],
+  },
+
+  // 404 Catch-All Route
+  {
+    path: "/:pathMatch(.*)*",
+    name: "not-found",
+    component: () => import("@/views/NotFoundView.vue"),
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior() {
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    }
     return { top: 0 };
   },
 });
 
-// ប្ដូរពី 'from' ទៅ '_from' ដើម្បីលុប warning (Unused variable)
 router.beforeEach((to, _from, next) => {
-  const isAuthenticated = !!localStorage.getItem("user_token");
+  const token = localStorage.getItem("user_token");
+  const userRole = localStorage.getItem("user_role");
+  const isAuthenticated = !!token;
+  const isAdmin = userRole === "admin";
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ path: "/login", query: { redirect: to.fullPath } });
-  } else {
-    next();
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin);
+
+  // 1. Check Admin protection
+  if (requiresAdmin) {
+    if (!isAuthenticated) {
+      return next({ path: "/admin/login", query: { redirect: to.fullPath } });
+    }
+    if (!isAdmin) {
+      return next({ path: "/" });
+    }
   }
+
+  // 2. Check Standard User protection
+  if (requiresAuth && !isAuthenticated) {
+    return next({ path: "/login", query: { redirect: to.fullPath } });
+  }
+
+  // 3. Redirect authenticated users away from login/register
+  if (isAuthenticated && (to.name === "login" || to.name === "register")) {
+    return next({ path: "/" });
+  }
+
+  next();
 });
 
 export default router;

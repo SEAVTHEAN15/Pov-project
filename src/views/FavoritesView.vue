@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useFavoriteStore } from "@/stores/favorite.store";
 import { useCartStore } from "@/stores/cart.store";
+import type { Product } from "@/types/Product";
 
 const favoriteStore = useFavoriteStore();
 const cartStore = useCartStore();
 
 // Move item from Favorites to Cart
-const moveToCart = (product: any) => {
+const moveToCart = (product: Product) => {
   cartStore.addToCart(product);
   favoriteStore.toggleFavorite(product);
 };
@@ -21,7 +22,7 @@ const moveToCart = (product: any) => {
 
     <!-- Empty State -->
     <div v-if="favoriteStore.favoriteItems.length === 0" class="empty-state">
-      <div class="heart-icon-wrapper">
+      <div class="heart-icon-wrapper" aria-hidden="true">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="48"
@@ -43,8 +44,8 @@ const moveToCart = (product: any) => {
       <RouterLink to="/products" class="shop-btn">Continue Shopping</RouterLink>
     </div>
 
-    <!-- Favorites Grid -->
-    <div v-else class="products-grid">
+    <!-- Favorites Grid with Vue Animations -->
+    <TransitionGroup v-else name="grid-fade" tag="div" class="products-grid">
       <div
         v-for="product in favoriteStore.favoriteItems"
         :key="product.id"
@@ -54,6 +55,7 @@ const moveToCart = (product: any) => {
           class="remove-btn"
           @click="favoriteStore.toggleFavorite(product)"
           title="Remove from favorites"
+          :aria-label="`Remove ${product.name} from favorites`"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -63,6 +65,7 @@ const moveToCart = (product: any) => {
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            aria-hidden="true"
           >
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -70,12 +73,16 @@ const moveToCart = (product: any) => {
         </button>
 
         <div class="image-wrapper">
-          <img :src="product.image || '/placeholder.png'" :alt="product.name" />
+          <img
+            :src="product.image || '/placeholder.png'"
+            :alt="product.name"
+            loading="lazy"
+          />
         </div>
 
         <div class="product-info">
           <h3 class="product-name">{{ product.name }}</h3>
-          <p class="product-price">${{ product.price }}</p>
+          <p class="product-price">${{ Number(product.price).toFixed(2) }}</p>
 
           <div class="card-actions">
             <button class="add-cart-btn" @click="moveToCart(product)">
@@ -84,7 +91,7 @@ const moveToCart = (product: any) => {
           </div>
         </div>
       </div>
-    </div>
+    </TransitionGroup>
   </div>
 </template>
 
@@ -92,7 +99,7 @@ const moveToCart = (product: any) => {
 .favorites-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem 0;
+  padding: 1rem 1rem 5rem;
 }
 
 .header-section {
@@ -260,5 +267,37 @@ const moveToCart = (product: any) => {
 
 .add-cart-btn:hover {
   background-color: #ff5b93;
+}
+
+/* TransitionGroup Animations */
+.grid-fade-enter-active,
+.grid-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.grid-fade-enter-from,
+.grid-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.grid-fade-leave-active {
+  position: absolute;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+
+  .image-wrapper {
+    height: 150px;
+  }
+
+  .page-title {
+    font-size: 1.4rem;
+  }
 }
 </style>
