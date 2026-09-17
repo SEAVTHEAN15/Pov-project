@@ -1,73 +1,70 @@
-// import { defineStore } from "pinia";
-// // import { Product, CartItem } from "@/types/Product";
-// import type { Product, CartItem } from "@/types/Product";
-
-// export const useCartStore = defineStore("cart", {
-//   state: () => ({
-//     items: [] as CartItem[],
-//   }),
-//   getters: {
-//     totalCount: (state) =>
-//       state.items.reduce((acc, item) => acc + item.quantity, 0),
-//     totalPrice: (state) =>
-//       state.items.reduce(
-//         (acc, item) => acc + item.product.price * item.quantity,
-//         0,
-//       ),
-//   },
-//   actions: {
-//     addItem(product: Product) {
-//       const existing = this.items.find((i) => i.product.id === product.id);
-//       if (existing) {
-//         existing.quantity++;
-//       } else {
-//         this.items.push({ product, quantity: 1 });
-//       }
-//     },
-//     removeItem(productId: string) {
-//       this.items = this.items.filter((i) => i.product.id !== productId);
-//     },
-//     updateQuantity(productId: string, quantity: number) {
-//       const item = this.items.find((i) => i.product.id === productId);
-//       if (item) {
-//         item.quantity = quantity;
-//         if (item.quantity <= 0) this.removeItem(productId);
-//       }
-//     },
-//   },
-// });
-
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import type { Product, CartItem } from "@/types/Product";
 
+const CART_STORAGE_KEY = "shopping_cart_items";
+
 export const useCartStore = defineStore("cart", () => {
-  const items = ref<CartItem[]>([]);
+  // Load initial cart state from localStorage if available
+  const initialItems = (): CartItem[] => {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  };
+
+  const items = ref<CartItem[]>(initialItems());
+
+  // Watch and persist changes to localStorage
+  watch(
+    items,
+    (newItems) => {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newItems));
+    },
+    { deep: true },
+  );
 
   // បញ្ចូលទំនិញទៅក្នុងកន្ត្រក
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, quantity: number = 1) => {
     const existingItem = items.value.find((i) => i.product.id === product.id);
     if (existingItem) {
-      existingItem.quantity += 1;
+      existingItem.quantity += quantity;
     } else {
-      items.value.push({ product, quantity: 1 });
+      items.value.push({ product, quantity });
     }
   };
 
-  // កែប្រែចំនួនទំនិញ (+ ឬ -)
+  // កែប្រែចំនួនទំនិញ (+ ឬ - តាម delta)
   const updateQuantity = (productId: string, delta: number) => {
     const item = items.value.find((i) => i.product.id === productId);
     if (item) {
       const newQty = item.quantity + delta;
       if (newQty > 0) {
         item.quantity = newQty;
+      } else {
+        removeFromCart(productId);
       }
+    }
+  };
+
+  // កំណត់ចំនួនទំនិញដោយផ្ទាល់ (Direct Set)
+  const setQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    const item = items.value.find((i) => i.product.id === productId);
+    if (item) {
+      item.quantity = quantity;
     }
   };
 
   // លុបទំនិញចេញពីកន្ត្រក
   const removeFromCart = (productId: string) => {
     items.value = items.value.filter((i) => i.product.id !== productId);
+  };
+
+  // សម្អាតកន្ត្រកទាំងមូល
+  const clearCart = () => {
+    items.value = [];
   };
 
   // គណនាចំនួនទំនិញសរុប (បង្ហាញលើ Header)
@@ -82,18 +79,15 @@ export const useCartStore = defineStore("cart", () => {
       0,
     );
   });
-  // បន្ថែម function នេះ
-  const clearCart = () => {
-    items.value = [];
-  };
 
   return {
     items,
     addToCart,
     updateQuantity,
+    setQuantity,
     removeFromCart,
+    clearCart,
     totalCount,
     subtotal,
-    clearCart,
   };
 });

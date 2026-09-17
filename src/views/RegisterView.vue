@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter, RouterLink } from "vue-router";
+import { useRouter, useRoute, RouterLink } from "vue-router";
 
 const router = useRouter();
+const route = useRoute();
 
 const firstName = ref("");
 const lastName = ref("");
@@ -12,15 +13,72 @@ const email = ref("");
 const country = ref("Cambodia");
 const city = ref("");
 
+// Helper function to clear previous user session state
+const clearPreviousUserSession = () => {
+  localStorage.removeItem("user_profile");
+  localStorage.removeItem("wishlist");
+  localStorage.removeItem("wishlist_items");
+  localStorage.removeItem("cart");
+  localStorage.removeItem("cart_items");
+  localStorage.removeItem("user_orders");
+};
+
 const handleRegister = () => {
   if (!email.value || !mobileNumber.value) {
     alert("Please complete all required fields");
     return;
   }
 
-  // Save token after signup
+  // 1. Clear previous account data
+  clearPreviousUserSession();
+
+  // 2. Set token and saved email
   localStorage.setItem("user_token", "demo_token_123");
-  router.push("/");
+  localStorage.setItem("user_email", email.value);
+
+  // 3. Assemble full user profile from input fields
+  const fullName =
+    `${firstName.value} ${lastName.value}`.trim() || email.value.split("@")[0];
+  const fullAddress = city.value
+    ? `${city.value}, ${country.value}`
+    : country.value;
+
+  const newProfile = {
+    name: fullName,
+    email: email.value,
+    phone: mobileNumber.value,
+    gender: gender.value,
+    address: fullAddress,
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email.value}`,
+  };
+
+  // 4. Save to localStorage for ProfileView.vue consumption
+  localStorage.setItem("user_profile", JSON.stringify(newProfile));
+
+  // 5. Redirect user to intended path or home page
+  const redirectPath = (route.query.redirect as string) || "/";
+  router.push(redirectPath);
+};
+
+// Handle Social Registration / Login
+const handleSocialLogin = () => {
+  clearPreviousUserSession();
+
+  const demoSocialEmail = "social.user@gmail.com";
+  localStorage.setItem("user_token", "social_demo_token_123");
+  localStorage.setItem("user_email", demoSocialEmail);
+
+  const newProfile = {
+    name: "Social User",
+    email: demoSocialEmail,
+    phone: "",
+    address: "Phnom Penh, Cambodia",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=SocialUser",
+  };
+  localStorage.setItem("user_profile", JSON.stringify(newProfile));
+
+  const redirectPath = (route.query.redirect as string) || "/";
+  router.push(redirectPath);
 };
 </script>
 
