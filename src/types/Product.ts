@@ -1,5 +1,11 @@
 export type CategoryType = "eyes" | "lips" | "cheeks" | "face" | "others";
 
+// Define the structure for each individual shade
+export interface Shade {
+  id: string;
+  name: string;
+  colorCode: string;
+}
 export interface Product {
   id: string;
   name: string;
@@ -8,6 +14,7 @@ export interface Product {
   category: CategoryType;
   subcategory: string;
   description?: string;
+  shades?: Shade[];
   isNewArrival?: boolean;
   isBestSeller?: boolean;
   isClearStock?: boolean;

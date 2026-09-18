@@ -3,12 +3,12 @@ import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useFavoriteStore } from "@/stores/favorite.store";
 import { useCartStore } from "@/stores/cart.store";
-import { useProductStore } from "@/stores/product.store"; // 1. Import product store
+import { useProductStore } from "@/stores/product.store";
 import type { Product } from "@/types/Product";
 
 const route = useRoute();
 const router = useRouter();
-const productStore = useProductStore(); // 2. Initialize product store
+const productStore = useProductStore();
 const props = defineProps<{ id?: string }>();
 
 const productId = computed(() => props.id || (route.params.id as string));
@@ -18,7 +18,6 @@ const product = computed<Product | undefined>(() => {
     .trim()
     .toLowerCase();
 
-  // 3. Search inside productStore.products instead of dummyProducts
   return productStore.products.find(
     (p) => String(p.id).trim().toLowerCase() === currentId,
   );
@@ -34,13 +33,17 @@ const goBack = () => {
 
 const quantity = ref(1);
 const activeTab = ref<"details" | "ingredients" | "howToUse">("details");
-const activeShade = ref(0);
+const activeShadeIndex = ref(0);
 
-// Sample shade options for cosmetics
-const shadeOptions = [
-  { name: "#01 Soft Warm", hex: "#D6A383" },
-  { name: "#02 Deep Cool", hex: "#B88368" },
-];
+// Dynamic shade options computed directly from the product object
+const productShades = computed(() => {
+  const p = product.value as any;
+  if (p && Array.isArray(p.shades) && p.shades.length > 0) {
+    return p.shades;
+  }
+  // Return an empty array so products without shades (like mirrors) hide this section completely
+  return [];
+});
 
 const favoriteStore = useFavoriteStore();
 const cartStore = useCartStore();
@@ -52,16 +55,40 @@ const decreaseQty = () => {
 
 const handleAddToCart = () => {
   if (product.value) {
+    const selectedShade = productShades.value[activeShadeIndex.value] || null;
+
+    // Explicitly type using Omit to make price strictly a number
+    const productWithShade: Omit<Product, "price"> & {
+      price: number;
+      selectedShade: typeof selectedShade;
+    } = {
+      ...product.value,
+      price: Number(product.value.price),
+      selectedShade,
+    };
+
     for (let i = 0; i < quantity.value; i++) {
-      cartStore.addToCart(product.value);
+      cartStore.addToCart(productWithShade as any);
     }
   }
 };
 
 const handleBuyNow = () => {
   if (product.value) {
+    const selectedShade = productShades.value[activeShadeIndex.value] || null;
+
+    // Explicitly type using Omit to make price strictly a number
+    const productWithShade: Omit<Product, "price"> & {
+      price: number;
+      selectedShade: typeof selectedShade;
+    } = {
+      ...product.value,
+      price: Number(product.value.price),
+      selectedShade,
+    };
+
     for (let i = 0; i < quantity.value; i++) {
-      cartStore.addToCart(product.value);
+      cartStore.addToCart(productWithShade as any);
     }
     router.push("/payment");
   }
@@ -133,11 +160,19 @@ const handleBuyNow = () => {
             <span class="rating-score">4.9</span>
             <span class="review-count">(128 reviews)</span>
           </div>
-          <span class="stock-status in-stock">● In Stock</span>
+          <span
+            :class="[
+              'stock-status',
+              (product as any).isClearStock ? 'clearance' : 'in-stock',
+            ]"
+          >
+            ●
+            {{ (product as any).isClearStock ? "Clearance Stock" : "In Stock" }}
+          </span>
         </div>
 
         <div class="price-row">
-          <span class="price-tag">${{ product.price.toFixed(2) }}</span>
+          <span class="price-tag">${{ Number(product.price).toFixed(2) }}</span>
           <span class="vat-info">Taxes included</span>
         </div>
 
@@ -148,24 +183,29 @@ const handleBuyNow = () => {
           }}
         </p>
 
-        <!-- Shade Selector -->
-        <div class="shade-selection">
+        <!-- Dynamic Shade Selector -->
+        <div class="shade-selection" v-if="productShades.length > 0">
           <label class="section-label">
-            Shade: <span>{{ shadeOptions[activeShade].name }}</span>
+            Shade:
+            <span>{{
+              productShades[activeShadeIndex]?.name
+                ? `#${productShades[activeShadeIndex].id} ${productShades[activeShadeIndex].name}`
+                : ""
+            }}</span>
           </label>
           <div class="shade-options">
             <button
-              v-for="(shade, idx) in shadeOptions"
+              v-for="(shade, idx) in productShades"
               :key="idx"
               class="shade-btn"
-              :class="{ active: activeShade === idx }"
-              @click="activeShade = idx"
+              :class="{ active: activeShadeIndex === Number(idx) }"
+              @click="activeShadeIndex = Number(idx)"
             >
               <span
                 class="shade-color"
-                :style="{ backgroundColor: shade.hex }"
+                :style="{ backgroundColor: shade.colorCode || '#c49a75' }"
               ></span>
-              {{ shade.name }}
+              #{{ shade.id }} {{ shade.name }}
             </button>
           </div>
         </div>
@@ -256,9 +296,10 @@ const handleBuyNow = () => {
           </div>
           <div class="tab-content">
             <p v-if="activeTab === 'details'">
-              Provides seamless blending with ultrafine powder particles. Dual
-              shade spectrum allows for natural contouring and multi-dimensional
-              highlighting.
+              {{
+                product.description ||
+                "Provides seamless blending with ultrafine powder particles. Dual shade spectrum allows for natural contouring and multi-dimensional highlighting."
+              }}
             </p>
             <p v-if="activeTab === 'howToUse'">
               Apply moderate amount gently along the hairline, jawline, and
@@ -420,6 +461,11 @@ const handleBuyNow = () => {
 .in-stock {
   background-color: #e8f5e9;
   color: #2e7d32;
+}
+
+.clearance {
+  background-color: #fee2e2;
+  color: #ef4444;
 }
 
 /* Price */
@@ -641,6 +687,12 @@ const handleBuyNow = () => {
   font-size: 0.88rem;
   color: #666;
   line-height: 1.6;
+}
+
+.not-found {
+  text-align: center;
+  padding: 4rem;
+  color: #888;
 }
 
 @media (max-width: 900px) {
