@@ -10,7 +10,7 @@ const isLoading = ref(false);
 
 const handleAdminLogin = async () => {
   if (!email.value || !password.value) {
-    errorMessage.value = "សូមបញ្ចូលអ៊ីមែល និងពាក្យសម្ងាត់!";
+    errorMessage.value = "Please enter your email and password!";
     return;
   }
 
@@ -32,10 +32,10 @@ const handleAdminLogin = async () => {
 
       await router.push("/admin/dashboard");
     } else {
-      errorMessage.value = "អ៊ីមែល ឬពាក្យសម្ងាត់ Admin មិនត្រឹមត្រូវឡើយ!";
+      errorMessage.value = "email or password incorrect!";
     }
   } catch (error) {
-    errorMessage.value = "មានបញ្ហាក្នុងប្រព័ន្ធ សូមព្យាយាមម្តងទៀត។";
+    errorMessage.value = "here is an error in the system, please try again.";
   } finally {
     isLoading.value = false;
   }
@@ -52,7 +52,7 @@ const clearError = () => {
       <div class="admin-header">
         <div class="shield-icon">🛡️</div>
         <h2>Admin Portal</h2>
-        <p>ប្រព័ន្ធគ្រប់គ្រងសុវត្ថិភាពសម្រាប់អ្នកគ្រប់គ្រង</p>
+        <p>Security Management System for Administrator</p>
       </div>
 
       <form @submit.prevent="handleAdminLogin" class="admin-form">
@@ -63,7 +63,7 @@ const clearError = () => {
         </transition>
 
         <div class="form-group">
-          <label for="admin-email">អ៊ីមែល Admin</label>
+          <label for="admin-email">Email</label>
           <input
             id="admin-email"
             v-model="email"
@@ -75,7 +75,7 @@ const clearError = () => {
         </div>
 
         <div class="form-group">
-          <label for="admin-password">ពាក្យសម្ងាត់</label>
+          <label for="admin-password">Password</label>
           <input
             id="admin-password"
             v-model="password"
@@ -88,9 +88,7 @@ const clearError = () => {
 
         <button type="submit" class="admin-btn" :disabled="isLoading">
           <span v-if="isLoading" class="spinner"></span>
-          <span>{{
-            isLoading ? "កំពុងត្រួតពិនិត្យ..." : "ចូលប្រព័ន្ធ Admin"
-          }}</span>
+          <span>{{ isLoading ? "checking..." : "Admin Login" }}</span>
         </button>
       </form>
     </div>

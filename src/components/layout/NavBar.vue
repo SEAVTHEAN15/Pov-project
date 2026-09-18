@@ -454,6 +454,7 @@ watch(() => route.path, checkAuth);
   display: flex;
   align-items: center;
   gap: 1.25rem;
+  flex-shrink: 0;
 }
 
 .search-box {
@@ -476,11 +477,9 @@ watch(() => route.path, checkAuth);
   border-radius: 20px;
   outline: none;
   font-size: 0.85rem;
-  width: 170px;
+  width: 190px;
   color: #333;
-  transition:
-    border-color 0.2s,
-    width 0.2s;
+  transition: border-color 0.2s;
 }
 
 .search-box input::placeholder {
@@ -489,7 +488,7 @@ watch(() => route.path, checkAuth);
 
 .search-box input:focus {
   border-color: #ff5b93;
-  width: 200px;
+  /* width: 200px; */
 }
 
 .icons-group {
