@@ -16,6 +16,7 @@ const confirmPassword = ref("");
 // UI States
 const isLoading = ref(false);
 const errorMessage = ref("");
+const isSuccessModalOpen = ref(false); // Controls the professional popup modal
 
 // Step 1: Request OTP / Reset Link
 const handleRequestOtp = () => {
@@ -27,14 +28,14 @@ const handleRequestOtp = () => {
   // Simulate API Request
   setTimeout(() => {
     isLoading.value = false;
-    currentStep.value = 2; // រត់ទៅកាន់ Step 2
+    currentStep.value = 2;
   }, 1000);
 };
 
 // Step 2: Verify OTP
 const handleVerifyOtp = () => {
   if (otpCode.value.length < 4) {
-    errorMessage.value = "Please enter a valid OTP code";
+    errorMessage.value = "Please enter a valid OTP code.";
     return;
   }
 
@@ -44,19 +45,19 @@ const handleVerifyOtp = () => {
   // Simulate API Verification
   setTimeout(() => {
     isLoading.value = false;
-    currentStep.value = 3; // រត់ទៅកាន់ Step 3
+    currentStep.value = 3;
   }, 1000);
 };
 
 // Step 3: Reset Password
 const handleResetPassword = () => {
   if (newPassword.value !== confirmPassword.value) {
-    errorMessage.value = "Passwords do not match!";
+    errorMessage.value = "Passwords do not match.";
     return;
   }
 
   if (newPassword.value.length < 6) {
-    errorMessage.value = "Password must be at least 6 characters";
+    errorMessage.value = "Password must be at least 6 characters long.";
     return;
   }
 
@@ -66,9 +67,14 @@ const handleResetPassword = () => {
   // Simulate Password Update API
   setTimeout(() => {
     isLoading.value = false;
-    alert("Password reset successfully!");
-    router.push("/login");
+    isSuccessModalOpen.value = true; // Opens the popup modal on screen
   }, 1000);
+};
+
+// Handle modal button click to go to login
+const handleCloseModal = () => {
+  isSuccessModalOpen.value = false;
+  router.push("/login");
 };
 </script>
 
@@ -180,6 +186,42 @@ const handleResetPassword = () => {
         </p>
       </div>
     </div>
+
+    <!-- ================= PROFESSIONAL SUCCESS MODAL POPUP ================= -->
+    <Teleport to="body">
+      <div v-if="isSuccessModalOpen" class="modal-overlay">
+        <div class="success-modal-card">
+          <div class="success-icon-wrapper">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#10b981"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <!-- Fixed missing opening bracket (<) for polyline -->
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h3>Password Reset Successful!</h3>
+          <p>
+            Your password has been successfully updated. You can now log in with
+            your new password.
+          </p>
+          <button
+            type="button"
+            class="modal-action-btn"
+            @click="handleCloseModal"
+          >
+            Continue to Login
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -220,5 +262,86 @@ const handleResetPassword = () => {
 
 .text-btn:hover {
   color: #eb5e8d;
+}
+
+/* ================= MODAL STYLES ================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  backdrop-filter: blur(3px);
+}
+
+.success-modal-card {
+  background: #fff;
+  padding: 2.2rem 2rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalScaleIn 0.25s ease-out;
+}
+
+@keyframes modalScaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  background-color: #e6f9f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.2rem auto;
+}
+
+.success-modal-card h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 0.5rem;
+}
+
+.success-modal-card p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1.8rem;
+  line-height: 1.5;
+}
+
+.modal-action-btn {
+  width: 100%;
+  background-color: #ff5b93;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.modal-action-btn:hover {
+  background-color: #e04a7e;
 }
 </style>
