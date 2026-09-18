@@ -18,26 +18,18 @@ const isDeleteModalOpen = ref(false);
 const productToDeleteId = ref<string | number | null>(null);
 
 // Form State matching Product types
-const formProduct = ref<{
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  category: CategoryType;
-  subcategory: string;
-  description: string;
-  isClearStock: boolean;
-  shades: Array<{ id: string; name: string; colorCode: string }>;
-}>({
+const formProduct = ref({
   id: "",
   name: "",
   price: 0,
   image: "",
-  category: "face",
+  category: "face" as CategoryType,
   subcategory: "",
   description: "",
   isClearStock: false,
-  shades: [],
+  isNewArrival: false,
+  isBestSeller: false,
+  shades: [] as Array<{ id: string; name: string; colorCode: string }>,
 });
 
 // Temporary inputs for the Shade Builder inside the modal
@@ -63,7 +55,7 @@ const removeShade = (index: number) => {
   formProduct.value.shades.splice(index, 1);
 };
 
-// 🛠️ FIXED: Handle local disk image selection & convert to Base64 for permanent storage
+// Handle local disk image selection & convert to Base64 for permanent storage
 const handleImageUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
@@ -72,7 +64,6 @@ const handleImageUpload = (event: Event) => {
 
     reader.onload = (e) => {
       const base64String = e.target?.result as string;
-      // Assign the permanent Base64 string to the image form field
       formProduct.value.image = base64String;
     };
 
@@ -115,6 +106,8 @@ const openAddModal = () => {
     subcategory: "",
     description: "",
     isClearStock: false,
+    isNewArrival: false,
+    isBestSeller: false,
     shades: [],
   };
   tempShadeId.value = "";
@@ -142,6 +135,8 @@ const openEditModal = (product: Product) => {
     subcategory: product.subcategory || "",
     description: product.description || "",
     isClearStock: Boolean(product.isClearStock),
+    isNewArrival: Boolean((product as any).isNewArrival),
+    isBestSeller: Boolean((product as any).isBestSeller),
     shades: existingShades,
   };
 
@@ -164,6 +159,8 @@ const handleSubmit = () => {
     subcategory: formProduct.value.subcategory,
     description: formProduct.value.description,
     isClearStock: formProduct.value.isClearStock,
+    isNewArrival: formProduct.value.isNewArrival,
+    isBestSeller: formProduct.value.isBestSeller,
     shades: formProduct.value.shades,
   };
 
@@ -414,10 +411,25 @@ const confirmDelete = () => {
               ></textarea>
             </div>
 
+            <!-- Badges / Flags Checkboxes -->
             <div class="form-group checkbox-group">
               <label>
                 <input type="checkbox" v-model="formProduct.isClearStock" />
                 Mark as Clear Stock / Clearance Item
+              </label>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" v-model="formProduct.isNewArrival" />
+                Mark as New Arrival
+              </label>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" v-model="formProduct.isBestSeller" />
+                Mark as Best Seller
               </label>
             </div>
 
