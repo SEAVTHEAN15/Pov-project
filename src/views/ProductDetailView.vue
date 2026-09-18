@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useFavoriteStore } from "@/stores/favorite.store";
 import { useCartStore } from "@/stores/cart.store";
@@ -34,6 +34,7 @@ const goBack = () => {
 const quantity = ref(1);
 const activeTab = ref<"details" | "ingredients" | "howToUse">("details");
 const activeShadeIndex = ref(0);
+const showLoginModal = ref(false); // Controls the login required modal popup
 
 // Dynamic shade options computed directly from the product object
 const productShades = computed(() => {
@@ -41,7 +42,6 @@ const productShades = computed(() => {
   if (p && Array.isArray(p.shades) && p.shades.length > 0) {
     return p.shades;
   }
-  // Return an empty array so products without shades (like mirrors) hide this section completely
   return [];
 });
 
@@ -57,7 +57,6 @@ const handleAddToCart = () => {
   if (product.value) {
     const selectedShade = productShades.value[activeShadeIndex.value] || null;
 
-    // Explicitly type using Omit to make price strictly a number
     const productWithShade: Omit<Product, "price"> & {
       price: number;
       selectedShade: typeof selectedShade;
@@ -73,11 +72,21 @@ const handleAddToCart = () => {
   }
 };
 
+// Check authentication before running Buy Now
 const handleBuyNow = () => {
+  const isAuthenticated = !!localStorage.getItem("user_token");
+
+  if (!isAuthenticated) {
+    showLoginModal.value = true;
+  } else {
+    executeBuyNow();
+  }
+};
+
+const executeBuyNow = () => {
   if (product.value) {
     const selectedShade = productShades.value[activeShadeIndex.value] || null;
 
-    // Explicitly type using Omit to make price strictly a number
     const productWithShade: Omit<Product, "price"> & {
       price: number;
       selectedShade: typeof selectedShade;
@@ -93,6 +102,25 @@ const handleBuyNow = () => {
     router.push("/payment");
   }
 };
+
+const goToLogin = () => {
+  showLoginModal.value = false;
+  // Passes the current dynamic product route so login redirects back here instead of home
+  router.push({ path: "/login", query: { redirect: route.fullPath } });
+};
+
+const closeModal = () => {
+  showLoginModal.value = false;
+};
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === "Escape" && showLoginModal.value) {
+    closeModal();
+  }
+};
+
+onMounted(() => window.addEventListener("keydown", handleKeydown));
+onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
 </script>
 
 <template>
@@ -313,6 +341,27 @@ const handleBuyNow = () => {
         </div>
       </div>
     </div>
+
+    <!-- Login Required Modal Popup -->
+    <Transition name="fade">
+      <div
+        v-if="showLoginModal"
+        class="modal-backdrop"
+        @click.self="closeModal"
+      >
+        <div class="modal-card" role="dialog" aria-modal="true">
+          <div class="modal-icon">🔒</div>
+          <h3>Login Required</h3>
+          <p>
+            Please log in to your account before proceeding with your purchase.
+          </p>
+          <div class="modal-actions">
+            <button class="btn-secondary" @click="closeModal">Cancel</button>
+            <button class="btn-primary" @click="goToLogin">Go to Login</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 
   <div v-else class="not-found">
@@ -687,6 +736,94 @@ const handleBuyNow = () => {
   font-size: 0.88rem;
   color: #666;
   line-height: 1.6;
+}
+
+/* Modal Styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+.modal-card {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.modal-card .modal-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-card h3 {
+  font-size: 1.25rem;
+  color: #222;
+  margin-bottom: 0.5rem;
+}
+
+.modal-card p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.modal-actions button {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.modal-actions .btn-secondary {
+  background-color: #f0f0f0;
+  color: #555;
+}
+
+.modal-actions .btn-secondary:hover {
+  background-color: #e2e2e2;
+}
+
+.modal-actions .btn-primary {
+  background-color: #ff6fa3;
+  color: white;
+}
+
+.modal-actions .btn-primary:hover {
+  background-color: #e04a7e;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .not-found {

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { useCartStore } from "@/stores/cart.store";
-import { RouterLink, useRouter } from "vue-router";
+import { RouterLink, useRouter, useRoute } from "vue-router"; // 1. Import useRoute
 
 const cartStore = useCartStore();
 const router = useRouter();
+const route = useRoute(); // 2. Initialize route
 
 const showLoginModal = ref(false);
 
@@ -20,7 +21,8 @@ const handleCheckout = () => {
 
 const goToLogin = () => {
   showLoginModal.value = false;
-  router.push({ path: "/login", query: { redirect: "/cart" } });
+  // 3. Use route.fullPath so it remembers the exact current page (cart, product page, etc.)
+  router.push({ path: "/login", query: { redirect: route.fullPath } });
 };
 
 const closeModal = () => {
