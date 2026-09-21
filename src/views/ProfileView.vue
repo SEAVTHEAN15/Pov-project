@@ -176,23 +176,25 @@ const handleLogout = () => {
               :class="['tab-btn', { active: activeTab === 'profile' }]"
               @click="activeTab = 'profile'"
             >
-              <span>👤</span> Personal Details
+              <span><i class="fa-solid fa-user"></i></span> Personal Details
             </button>
             <button
               v-if="!isAdmin"
               :class="['tab-btn', { active: activeTab === 'orders' }]"
               @click="activeTab = 'orders'"
             >
-              <span>📦</span> My Orders
+              <span><i class="fa-solid fa-boxes-packing"></i></span> My Orders
             </button>
             <button
               :class="['tab-btn', { active: activeTab === 'address' }]"
               @click="activeTab = 'address'"
             >
-              <span>📍</span> Saved Address
+              <span><i class="fa-solid fa-location-dot"></i></span> Saved
+              Address
             </button>
             <button class="tab-btn logout" @click="handleLogout">
-              <span>🚪</span> Log Out
+              <span><i class="fa-solid fa-right-from-bracket"></i></span> Log
+              Out
             </button>
           </nav>
         </aside>
