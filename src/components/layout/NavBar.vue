@@ -369,7 +369,7 @@ watch(() => route.path, checkAuth);
                   My Profile
                 </RouterLink>
                 <button class="dropdown-item logout-link" @click="handleLogout">
-                  Logout
+                  Logout <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
               </template>
 

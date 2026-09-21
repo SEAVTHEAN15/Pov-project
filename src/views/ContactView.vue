@@ -67,28 +67,34 @@ onUnmounted(() => {
           <h3>Contact Information</h3>
           <ul class="contact-list">
             <li>
-              <div class="info-icon">📞</div>
+              <div class="info-icon">
+                <i class="fa-solid fa-phone-volume"></i>
+              </div>
               <div>
                 <strong>Phone</strong>
                 <p>+855 123 456 789</p>
               </div>
             </li>
             <li>
-              <div class="info-icon">✉️</div>
+              <div class="info-icon"><i class="fa-solid fa-envelope"></i></div>
               <div>
                 <strong>Email</strong>
                 <p>pinkycosmetics@beauty.com</p>
               </div>
             </li>
             <li>
-              <div class="info-icon">📍</div>
+              <div class="info-icon">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
               <div>
                 <strong>Flagship Boutique</strong>
                 <p>Monivong Blvd, Phnom Penh, Cambodia</p>
               </div>
             </li>
             <li>
-              <div class="info-icon">⏰</div>
+              <div class="info-icon">
+                <i class="fa-solid fa-alarm-clock"></i>
+              </div>
               <div>
                 <strong>Opening Hours</strong>
                 <p>Mon - Sun: 9:00 AM - 8:00 PM</p>
