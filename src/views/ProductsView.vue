@@ -109,9 +109,9 @@ const filteredProducts = computed(() => {
 </template>
 
 <style scoped>
-/* .products-view {
-  padding: 1rem 0;
-} */
+.products-view {
+  padding: 0px 0px 50px 0px;
+}
 
 .products-banner {
   text-align: center;

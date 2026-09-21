@@ -70,13 +70,18 @@ const routes: Array<RouteRecordRaw> = [
     path: "/admin/login",
     name: "admin-login",
     component: () => import("@/views/AdminLoginView.vue"),
+    meta: { hideNavbarFooter: true },
   },
 
-  // Protected Admin Routes Setup
+  // Protected Admin Routes Setup (Parent meta applies hideNavbarFooter to all children)
   {
     path: "/admin",
     component: () => import("@/views/admin/AdminLayout.vue"),
-    meta: { requiresAuth: true, requiresAdmin: true },
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      hideNavbarFooter: true,
+    },
     children: [
       {
         path: "",

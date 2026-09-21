@@ -34,22 +34,30 @@ const handleLogout = () => {
 
       <nav class="sidebar-nav">
         <router-link to="/admin/dashboard" class="nav-item">
-          <span class="icon">📊</span> Overview
+          <span class="icon"
+            ><i class="fa-solid fa-square-poll-vertical"></i
+          ></span>
+          Overview
         </router-link>
         <router-link to="/admin/products" class="nav-item">
-          <span class="icon">🛍️</span> Products
+          <span class="icon"><i class="fa-solid fa-box-open"></i></span>
+          Products
         </router-link>
         <router-link to="/admin/orders" class="nav-item">
-          <span class="icon">📦</span> Orders
+          <span class="icon"><i class="fa-solid fa-cubes"></i></span> Orders
         </router-link>
       </nav>
 
       <div class="sidebar-footer">
         <router-link to="/" class="nav-item exit-btn">
-          <span class="icon">⬅️</span> Back to Store
+          <span class="icon"><i class="fa-solid fa-arrow-left"></i></span> Back
+          to Store
         </router-link>
         <button @click="handleLogout" class="logout-btn">
-          <span class="icon">🚪</span> Logout
+          <span class="icon"
+            ><i class="fa-solid fa-arrow-right-from-bracket"></i
+          ></span>
+          Logout
         </button>
       </div>
     </aside>
