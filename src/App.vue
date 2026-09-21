@@ -1,11 +1,19 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import Navbar from "@/components/layout/NavBar.vue";
 import Footer from "@/components/layout/Footer.vue";
+
+const route = useRoute();
+
+// Hides navbar and footer whenever the current route path starts with "/admin"
+const isAdminRoute = computed(() => route.path.startsWith("/admin"));
 </script>
 
 <template>
   <div id="app-layout">
-    <Navbar />
+    <!-- Navbar only shows if it's NOT an admin route -->
+    <Navbar v-if="!isAdminRoute" />
 
     <main class="main-content">
       <div class="page-container">
@@ -13,7 +21,8 @@ import Footer from "@/components/layout/Footer.vue";
       </div>
     </main>
 
-    <Footer />
+    <!-- Footer only shows if it's NOT an admin route -->
+    <Footer v-if="!isAdminRoute" />
   </div>
 </template>
 
@@ -31,7 +40,6 @@ import Footer from "@/components/layout/Footer.vue";
 .page-container {
   max-width: 1300px;
   margin: 0 auto;
-  /* padding: 2rem 1.5rem; */
-  padding: 0px 0px 40px 0px;
+  /* padding: 0px 0px 40px 0px; */
 }
 </style>

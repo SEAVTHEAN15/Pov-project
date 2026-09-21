@@ -101,8 +101,9 @@ const clearError = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #0f172a;
-  padding: 1.5rem;
+  /* background-color: #0f172a; */
+
+  /* padding: 1.5rem; */
 }
 
 .admin-login-card {

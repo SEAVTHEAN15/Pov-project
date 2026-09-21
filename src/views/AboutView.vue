@@ -112,7 +112,7 @@ const features = [
 .about-container {
   max-width: 1400px;
   /* padding: 1.5rem 1rem 4rem; */
-  /* padding: 40px 0; */
+  padding: 0px 0px 50px 0;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
