@@ -113,6 +113,7 @@ const confirmSuccess = () => {
               <small>Scan to pay via any mobile banking app</small>
             </div>
           </label>
+          
 
           <label
             :class="['method-card', { active: selectedPayment === 'card' }]"
@@ -140,7 +141,7 @@ const confirmSuccess = () => {
           <p class="qr-instruction">Scan with Bakong or any Banking App</p>
           <div class="qr-box">
             <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=BakongPaymentSample"
+              src="/public/images/products/my-bakong-qr.jpg"
               alt="KHQR Code"
             />
           </div>
@@ -359,6 +360,8 @@ const confirmSuccess = () => {
 }
 
 .qr-box img {
+width: 300px;
+height: 300px;
   border-radius: 8px;
   border: 1px solid #eaeaea;
 }
